@@ -1,13 +1,30 @@
-var puppeteer = require("puppeteer");
-var cherrio = require("cheerio");
+const express = require("express");
+const app = express();
+const logger = require("morgan");
+const bodyParser = require("body-parser");
+const path = require("path");
 
-const sample = {
-    price: 1000,
-    guests: 1,
-    bedrooms: 1,
-    beds: 1,
-    baths: 1,
-};
+const puppeteer = require("puppeteer");
+const cheerio = require("cheerio");
+const indexRouter = require("./routes/index");
+
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'ejs');
+app.use(logger('dev'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+app.use(express.static(path.join(__dirname, 'public')));
+
+// const sample = {
+//     price: 1000,
+//     guests: 1,
+//     bedrooms: 1,
+//     beds: 1,
+//     baths: 1,
+// };
+
+app.use("", indexRouter);
 
 
 const uri = "https://www.airbnb.co.in/s/india/homes?refinement_paths%5B%5D=%2Fhomes&current_tab_id=home_tab&selected_tab_id=home_tab&screen_size=large&search_type=pagination&place_id=ChIJkbeSa_BfYzARphNChaFPjNc&s_tag=CSmPdSok&hide_dates_and_guests_filters=false";
@@ -19,7 +36,7 @@ async function scrape(url){
         const page = await browser.newPage();
         await page.goto(url, { waitUntil: "networkidle2" });
         const html = await page.evaluate(() => document.body.innerHTML);
-        const $ = await cherrio.load(html);
+        const $ = await cheerio.load(html);
         const home = $('[itemprop="itemListElement"] > div > div._ylefn59 > a ').map((i, element) => {
             return "https://www.airbnb.co.in" + $(element).attr("href");
         }).get();
@@ -33,7 +50,7 @@ async function scrapeDesc(url, page){
     try{
         await page.goto(url, { waitUntil: "networkidle2" });
         const html = await page.evaluate(() => document.body.innerHTML);
-        const $ = await cherrio.load(html);
+        const $ = await cheerio.load(html);
         const price = $("#room > div > div > div > div > div > div > div > div > div > div > div > div > div > div > div > div > div > div > div > span > span").text();
         const roomText = $("#room").text();
         const guestsAllowed = returnMatch(roomText, /\d+ guest/);
@@ -63,9 +80,13 @@ async function main(){
     const home = await scrape(uri);
     for(var i =0; i<home.length;i++){
         const result = await scrapeDesc(home[i], descPage);
-        console.log(result);
+        res.send(result);
     }
 }
 
-main();
+app.listen(3000, () => {
+    console.log("Connected Successfully");
+})
+
+// main();
 
