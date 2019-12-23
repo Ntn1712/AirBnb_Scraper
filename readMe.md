@@ -1,0 +1,1 @@
+run 'npm i' and start the server
