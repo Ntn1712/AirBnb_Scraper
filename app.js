@@ -20,9 +20,10 @@ const sample = {
 
 const uri = "https://www.airbnb.co.in/s/india/homes?refinement_paths%5B%5D=%2Fhomes&current_tab_id=home_tab&selected_tab_id=home_tab&screen_size=large&search_type=pagination&place_id=ChIJkbeSa_BfYzARphNChaFPjNc&s_tag=CSmPdSok&hide_dates_and_guests_filters=false";
 
+let browser;
+
 async function scrape(url){
     try{
-        const browser = await puppeteer.launch({headless: false});
         const page = await browser.newPage();
         await page.goto(url);
         const html = await page.evaluate(() => document.body.innerHTML);
@@ -36,8 +37,21 @@ async function scrape(url){
     }   
 }
 
+async function scrapeDesc(url, page){
+    try{
+        await page.goto(url);
+    } catch(err){
+        console.error(err);
+    }
+}
+
 async function main(){
+    browser = await puppeteer.launch({headless: false});
+    const descPage = await browser.newPage();
     const home = await scrape(uri);
+    for(var i =0; i<home.length;i++){
+        await scrapeDesc(home[i], descPage);
+    }
     console.log(home);
 }
 
